@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace ResumeAnalyzer.Core.Models
 {
-    internal class Analysis
+    public class Analysis
     {
         public int Id { get; set; }
         public int ResumeId { get; set; }
@@ -15,7 +14,6 @@ namespace ResumeAnalyzer.Core.Models
         public string Strengths { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
         public Resume Resume { get; set; } = null!;
         public JobMatch? JobMatch { get; set; }
     }
