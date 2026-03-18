@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="ResumeAnalyzer.API/ResumeAnalyzer.API.csproj" Id="25941dbc-f480-40fc-bcfd-6174004da095" />
+  <Project Path="ResumeAnalyzer.Core/ResumeAnalyzer.Core.csproj" Id="f2009fd3-86d2-43d7-b752-6738fb5f868a" />
+  <Project Path="ResumeAnalyzer.Infrastructure/ResumeAnalyzer.Infrastructure.csproj" Id="106653d8-b5bf-4ec8-b249-aa96e4bacfc1" />
+  <Project Path="ResumeAnalzer.Web/ResumeAnalzer.Web.csproj" Id="fe125c2c-77f8-4273-8d08-0e49a05d36b9" />
+</Solution>
