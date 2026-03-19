@@ -1,0 +1,170 @@
+﻿@page "/result"
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+@if (!AuthService.IsLoggedIn)
+{
+    Navigation.NavigateTo("/login");
+    return;
+}
+
+@if (result == null)
+{
+    Navigation.NavigateTo("/upload");
+    return;
+}
+
+<div class="container mt-4">
+    <h2 class="text-center mb-4">📊 Resume Analysis Result</h2>
+
+    <!-- ATS Score Card -->
+    <div class="row justify-content-center mb-4">
+        <div class="col-md-4">
+            <div class="card text-center shadow
+                @(result.AtsScore >= 70 ? "border-success" :
+                                   result.AtsScore >= 50 ? "border-warning" : "border-danger")">
+                <div class="card-body">
+                    <h5 class="card-title">ATS Score</h5>
+                    <h1 class="display-3
+                        @(result.AtsScore >= 70 ? "text-success" :
+                                                  result.AtsScore >= 50 ? "text-warning" : "text-danger")">
+                        @result.AtsScore
+                    </h1>
+                    <p class="text-muted">out of 100</p>
+                    <div class="progress">
+                        <div class="progress-bar
+                            @(result.AtsScore >= 70 ? "bg-success" :
+                                                           result.AtsScore >= 50 ? "bg-warning" : "bg-danger")"
+                             style="width: @result.AtsScore%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Match Score (if available) -->
+        @if (result.JobMatchScore.HasValue)
+        {
+            <div class="col-md-4">
+                <div class="card text-center shadow border-info">
+                    <div class="card-body">
+                        <h5 class="card-title">Job Match Score</h5>
+                        <h1 class="display-3 text-info">
+                            @result.JobMatchScore
+                        </h1>
+                        <p class="text-muted">out of 100</p>
+                        <div class="progress">
+                            <div class="progress-bar bg-info"
+                                 style="width: @result.JobMatchScore%">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="row">
+        <!-- Skills -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-primary text-white">
+                    💡 Skills Found
+                </div>
+                <div class="card-body">
+                    @foreach (var skill in result.Skills)
+                    {
+                        <span class="badge bg-primary me-1 mb-1">
+                            @skill
+                        </span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Strengths -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-success text-white">
+                    ✅ Strengths
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        @foreach (var strength in result.Strengths)
+                        {
+                            <li>✅ @strength</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Experience Summary -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    📋 Experience Summary
+                </div>
+                <div class="card-body">
+                    <p>@result.ExperienceSummary</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Suggestions -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-warning">
+                    🔧 Improvement Suggestions
+                </div>
+                <div class="card-body">
+                    <ol>
+                        @foreach (var suggestion in result.Suggestions)
+                        {
+                            <li class="mb-2">@suggestion</li>
+                        }
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Missing Keywords (if job match) -->
+        @if (result.MissingKeywords.Any())
+        {
+            <div class="col-md-12 mb-4">
+                <div class="card shadow">
+                    <div class="card-header bg-danger text-white">
+                        ❌ Missing Keywords
+                    </div>
+                    <div class="card-body">
+                        @foreach (var keyword in result.MissingKeywords)
+                        {
+                            <span class="badge bg-danger me-1 mb-1">
+                                @keyword
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="text-center mt-3 mb-5">
+        <a href="/upload" class="btn btn-primary me-2">
+            📤 Upload Another Resume
+        </a>
+        <a href="/history" class="btn btn-outline-secondary">
+            📋 View History
+        </a>
+    </div>
+</div>
+
+@code {
+    private AnalysisResult? result;
+
+    protected override void OnInitialized()
+    {
+        result = AppState.AnalysisResult;
+    }
+}

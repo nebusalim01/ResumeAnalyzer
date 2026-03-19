@@ -1,0 +1,101 @@
+﻿@page "/history"
+@inject AuthService AuthService
+@inject ResumeService ResumeService
+@inject NavigationManager Navigation
+
+@if (!AuthService.IsLoggedIn)
+{
+    Navigation.NavigateTo("/login");
+    return;
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">📋 Analysis History</h2>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary"></div>
+            <p>Loading history...</p>
+        </div>
+    }
+    else if (!historyItems.Any())
+    {
+        <div class="alert alert-info text-center">
+            No analyses yet.
+            <a href="/upload">Upload your first resume!</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover shadow">
+                <thead class="table-primary">
+                    <tr>
+                        <th>File Name</th>
+                        <th>ATS Score</th>
+                        <th>Job Match</th>
+                        <th>Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in historyItems)
+                    {
+                        <tr>
+                            <td>📄 @item.FileName</td>
+                            <td>
+                                <span class="badge
+                                    @(item.ATSScore >= 70 ? "bg-success" :
+                                                                            item.ATSScore >= 50 ? "bg-warning" :
+                                                                            "bg-danger")">
+                                    @item.ATSScore / 100
+                                </span>
+                            </td>
+                            <td>
+                                @if (item.JobMatchScore.HasValue)
+                                {
+                                    <span class="badge bg-info">
+                                        @item.JobMatchScore / 100
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">N/A</span>
+                                }
+                            </td>
+                            <td>@item.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary"
+                                        @onclick="() => ViewAnalysis(item.ResumeId)">
+                                    View
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<HistoryItem> historyItems = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        historyItems = await ResumeService.GetHistoryAsync();
+        isLoading = false;
+    }
+
+    private async Task ViewAnalysis(int resumeId)
+    {
+        var result = await ResumeService.GetAnalysisAsync(resumeId);
+        if (result != null)
+        {
+            AppState.AnalysisResult = result;
+            Navigation.NavigateTo("/result");
+        }
+    }
+}

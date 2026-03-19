@@ -1,16 +1,40 @@
 ﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+@inject AuthService AuthService
+@inject NavigationManager Navigation
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/">📄 Resume Analyzer</a>
+        <div class="navbar-nav ms-auto">
+            @if (AuthService.IsLoggedIn)
+            {
+                <span class="navbar-text text-white me-3">
+                    👤 @AuthService.CurrentUser?.Name
+                </span>
+                <a class="nav-link text-white" href="/upload">Upload</a>
+                <a class="nav-link text-white" href="/history">History</a>
+                <button class="btn btn-outline-light btn-sm ms-2"
+                        @onclick="HandleLogout">
+                    Logout
+                </button>
+            }
+            else
+            {
+                <a class="nav-link text-white" href="/login">Login</a>
+                <a class="nav-link text-white" href="/register">Register</a>
+            }
         </div>
+    </div>
+</nav>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+<div class="container mt-4">
+    @Body
 </div>
+
+@code {
+    private void HandleLogout()
+    {
+        AuthService.Logout();
+        Navigation.NavigateTo("/login");
+    }
+}

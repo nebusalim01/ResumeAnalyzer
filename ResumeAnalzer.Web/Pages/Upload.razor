@@ -1,0 +1,138 @@
+﻿@page "/upload"
+@inject AuthService AuthService
+@inject ResumeService ResumeService
+@inject NavigationManager Navigation
+
+@if (!AuthService.IsLoggedIn)
+{
+    Navigation.NavigateTo("/login");
+    return;
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3>📄 Upload Resume</h3>
+                </div>
+                <div class="card-body">
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger">@errorMessage</div>
+                    }
+
+                    <!-- File Upload -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Resume File (PDF or DOCX)
+                        </label>
+                        <InputFile class="form-control"
+                                   OnChange="HandleFileSelected"
+                                   accept=".pdf,.docx" />
+                        @if (selectedFile != null)
+                        {
+                            <small class="text-success">
+                                ✅ Selected: @selectedFile.Name
+                                (@((selectedFile.Size / 1024)) KB)
+                            </small>
+                        }
+                    </div>
+
+                    <!-- Job Description (Optional) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Job Description
+                            <span class="text-muted">(Optional)</span>
+                        </label>
+                        <textarea class="form-control"
+                                  rows="5"
+                                  placeholder="Paste job description here to get match score..."
+                                      @bind="jobDescription">
+                        </textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button class="btn btn-primary w-100"
+                                @onclick="HandleUpload"
+                                disabled="@isLoading">
+                            @if (isLoading)
+                            {
+                                <span>
+                                    ⏳ Analyzing your resume... Please wait...
+                                </span>
+                            }
+                            else
+                            {
+                                <span>🚀 Upload & Analyze</span>
+                            }
+                        </button>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@code {
+    private IBrowserFile? selectedFile;
+    private string jobDescription = string.Empty;
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        errorMessage = string.Empty;
+    }
+
+    private async Task HandleUpload()
+    {
+        errorMessage = string.Empty;
+
+        if (selectedFile == null)
+        {
+            errorMessage = "Please select a file.";
+            return;
+        }
+
+        // Validate file size (5MB max)
+        if (selectedFile.Size > 5 * 1024 * 1024)
+        {
+            errorMessage = "File size must be less than 5MB.";
+            return;
+        }
+
+        isLoading = true;
+
+        try
+        {
+            using var stream = selectedFile.OpenReadStream(
+                maxAllowedSize: 5 * 1024 * 1024);
+
+            var result = await ResumeService.UploadResumeAsync(
+                stream,
+                selectedFile.Name,
+                string.IsNullOrWhiteSpace(jobDescription)
+                    ? null : jobDescription);
+
+            if (result != null)
+            {
+                // Store result and navigate to results page
+                AppState.AnalysisResult = result;
+                Navigation.NavigateTo("/result");
+            }
+            else
+            {
+                errorMessage = "Upload failed. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+
+        isLoading = false;
+    }
+}
