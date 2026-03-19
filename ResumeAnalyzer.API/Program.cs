@@ -23,7 +23,7 @@ builder.Services.AddScoped<IAnalysisRepository, AnalysisRepository>();
 
 // ── Services ────────────────────────────────────────────
 builder.Services.AddScoped<ResumeParserService>();
-builder.Services.AddHttpClient<IOpenAIService, OpenAIService>();
+builder.Services.AddHttpClient<IOpenAIService, GroqService>();
 
 // ── JWT Authentication ───────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]!;

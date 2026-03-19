@@ -7,18 +7,18 @@ using Microsoft.Extensions.Configuration;
 
 namespace ResumeAnalyzer.Infrastructure.Services
 {
-    public class OpenAIService : IOpenAIService
+    public class GroqService : IOpenAIService
     {
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
         private const string API_URL =
-            "https://api.openai.com/v1/chat/completions";
+            "https://api.groq.com/openai/v1/chat/completions";
 
-        public OpenAIService(HttpClient httpClient,
+        public GroqService(HttpClient httpClient,
             IConfiguration configuration)
         {
             _httpClient = httpClient;
-            _apiKey = configuration["OpenAI:ApiKey"]!;
+            _apiKey = configuration["Groq:ApiKey"]!;
         }
 
         public async Task<AnalysisResultDto> AnalyzeResumeAsync(
@@ -28,7 +28,7 @@ namespace ResumeAnalyzer.Infrastructure.Services
 
             var requestBody = new
             {
-                model = "gpt-3.5-turbo",
+                model = "llama-3.1-8b-instant",
                 messages = new[]
                 {
                     new
@@ -63,14 +63,16 @@ namespace ResumeAnalyzer.Infrastructure.Services
 
             if (!response.IsSuccessStatusCode)
             {
+                // Log full error for debugging
+                Console.WriteLine($"Groq Error: {responseString}");
                 throw new Exception(
-                    $"OpenAI API error {(int)response.StatusCode}: {responseString}");
+                    $"Groq API error {(int)response.StatusCode}: {responseString}");
             }
 
-            var openAIResponse = JsonSerializer.Deserialize<JsonElement>(
+            var groqResponse = JsonSerializer.Deserialize<JsonElement>(
                 responseString);
 
-            var resultText = openAIResponse
+            var resultText = groqResponse
                 .GetProperty("choices")[0]
                 .GetProperty("message")
                 .GetProperty("content")
@@ -86,7 +88,7 @@ namespace ResumeAnalyzer.Infrastructure.Services
             prompt.AppendLine("- ats_score: integer 0-100");
             prompt.AppendLine("- skills: array of strings");
             prompt.AppendLine("- experience_summary: string");
-            prompt.AppendLine("- suggestions: array of 5 strings");
+            prompt.AppendLine("- suggestions: array of exactly 5 strings");
             prompt.AppendLine("- strengths: array of strings");
 
             if (jobDescription != null)

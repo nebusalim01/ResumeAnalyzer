@@ -7,18 +7,18 @@ using Microsoft.Extensions.Configuration;
 
 namespace ResumeAnalyzer.Infrastructure.Services
 {
-    public class OpenAIService : IOpenAIService
+    public class GeminiService : IOpenAIService
     {
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
         private const string API_URL =
-            "https://api.openai.com/v1/chat/completions";
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
-        public OpenAIService(HttpClient httpClient,
+        public GeminiService(HttpClient httpClient,
             IConfiguration configuration)
         {
             _httpClient = httpClient;
-            _apiKey = configuration["OpenAI:ApiKey"]!;
+            _apiKey = configuration["Gemini:ApiKey"]!;
         }
 
         public async Task<AnalysisResultDto> AnalyzeResumeAsync(
@@ -28,52 +28,50 @@ namespace ResumeAnalyzer.Infrastructure.Services
 
             var requestBody = new
             {
-                model = "gpt-3.5-turbo",
-                messages = new[]
+                contents = new[]
                 {
                     new
                     {
-                        role = "system",
-                        content = "You are an expert HR consultant and ATS resume reviewer. " +
-                                  "Always respond with valid JSON only. " +
-                                  "No explanation, no markdown, no code blocks."
-                    },
-                    new
-                    {
-                        role = "user",
-                        content = prompt
+                        parts = new[]
+                        {
+                            new { text = prompt }
+                        }
                     }
                 },
-                temperature = 0.5,
-                max_tokens = 1500
+                generationConfig = new
+                {
+                    temperature = 0.5,
+                    maxOutputTokens = 1500
+                }
             };
 
             var json = JsonSerializer.Serialize(requestBody);
             var content = new StringContent(json, Encoding.UTF8,
                 "application/json");
 
+            // Gemini uses API key as header
             _httpClient.DefaultRequestHeaders.Clear();
-            _httpClient.DefaultRequestHeaders.Accept.Add(
-                new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", _apiKey);
+            _httpClient.DefaultRequestHeaders.Add(
+                "x-goog-api-key", _apiKey);
 
-            var response = await _httpClient.PostAsync(API_URL, content);
+            var url = API_URL;
+            var response = await _httpClient.PostAsync(url, content);
             var responseString = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
             {
                 throw new Exception(
-                    $"OpenAI API error {(int)response.StatusCode}: {responseString}");
+                    $"Gemini API error {(int)response.StatusCode}: {responseString}");
             }
 
-            var openAIResponse = JsonSerializer.Deserialize<JsonElement>(
+            var geminiResponse = JsonSerializer.Deserialize<JsonElement>(
                 responseString);
 
-            var resultText = openAIResponse
-                .GetProperty("choices")[0]
-                .GetProperty("message")
+            var resultText = geminiResponse
+                .GetProperty("candidates")[0]
                 .GetProperty("content")
+                .GetProperty("parts")[0]
+                .GetProperty("text")
                 .GetString()!;
 
             return ParseResult(resultText, jobDescription != null);
@@ -82,17 +80,18 @@ namespace ResumeAnalyzer.Infrastructure.Services
         private string BuildPrompt(string resumeText, string? jobDescription)
         {
             var prompt = new StringBuilder();
-            prompt.AppendLine("Analyze the resume and return JSON with these exact keys:");
-            prompt.AppendLine("- ats_score: integer 0-100");
-            prompt.AppendLine("- skills: array of strings");
-            prompt.AppendLine("- experience_summary: string");
-            prompt.AppendLine("- suggestions: array of 5 strings");
-            prompt.AppendLine("- strengths: array of strings");
+            prompt.AppendLine("You are an expert HR consultant and ATS resume reviewer.");
+            prompt.AppendLine("Analyze the resume below and return a JSON object with these exact keys:");
+            prompt.AppendLine("- ats_score: integer between 0 and 100");
+            prompt.AppendLine("- skills: array of skill strings found in resume");
+            prompt.AppendLine("- experience_summary: string summarizing work experience");
+            prompt.AppendLine("- suggestions: array of exactly 5 improvement suggestion strings");
+            prompt.AppendLine("- strengths: array of strength strings");
 
             if (jobDescription != null)
             {
-                prompt.AppendLine("- job_match_score: integer 0-100");
-                prompt.AppendLine("- missing_keywords: array of strings");
+                prompt.AppendLine("- job_match_score: integer between 0 and 100");
+                prompt.AppendLine("- missing_keywords: array of keyword strings missing from resume");
             }
 
             prompt.AppendLine();
@@ -107,7 +106,7 @@ namespace ResumeAnalyzer.Infrastructure.Services
             }
 
             prompt.AppendLine();
-            prompt.AppendLine("Return ONLY valid JSON. Nothing else.");
+            prompt.AppendLine("IMPORTANT: Return ONLY valid JSON. No explanation. No markdown. No code blocks.");
             return prompt.ToString();
         }
 
@@ -124,8 +123,7 @@ namespace ResumeAnalyzer.Infrastructure.Services
                 PropertyNameCaseInsensitive = true
             };
 
-            var raw = JsonSerializer.Deserialize<JsonElement>(
-                cleaned, options);
+            var raw = JsonSerializer.Deserialize<JsonElement>(cleaned, options);
 
             var result = new AnalysisResultDto
             {
