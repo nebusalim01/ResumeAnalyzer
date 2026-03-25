@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
+using ResumeAnalyzer.API.Services;
 using ResumeAnalyzer.Core.Interfaces;
 using ResumeAnalyzer.Infrastructure.Data;
 using ResumeAnalyzer.Infrastructure.Repositories;
@@ -24,6 +25,7 @@ builder.Services.AddScoped<IAnalysisRepository, AnalysisRepository>();
 // ── Services ────────────────────────────────────────────
 builder.Services.AddScoped<ResumeParserService>();
 builder.Services.AddHttpClient<IOpenAIService, GroqService>();
+builder.Services.AddScoped<ReportService>();
 
 // ── JWT Authentication ───────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"]!;

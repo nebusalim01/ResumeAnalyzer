@@ -1,6 +1,7 @@
 ﻿@page "/result"
 @inject AuthService AuthService
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 @if (!AuthService.IsLoggedIn)
 {
@@ -154,6 +155,10 @@
         <a href="/upload" class="btn btn-primary me-2">
             📤 Upload Another Resume
         </a>
+        <button class="btn btn-success me-2"
+                @onclick="DownloadReport">
+            📥 Download PDF Report
+        </button>
         <a href="/history" class="btn btn-outline-secondary">
             📋 View History
         </a>
@@ -166,5 +171,62 @@
     protected override void OnInitialized()
     {
         result = AppState.AnalysisResult;
+    }
+
+    private async Task DownloadReport()
+    {
+        try
+        {
+            // Check ResumeId
+            if (AppState.CurrentResumeId == 0)
+            {
+                await JS.InvokeVoidAsync("alert",
+                    "Resume ID not found. Please upload again.");
+                return;
+            }
+
+            // Check Token
+            if (string.IsNullOrEmpty(AppState.Token))
+            {
+                await JS.InvokeVoidAsync("alert",
+                    "Not logged in. Please login again.");
+                return;
+            }
+
+            var httpClient = new HttpClient();
+            httpClient.BaseAddress = new Uri("https://localhost:7242/");
+            httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue(
+                    "Bearer", AppState.Token);
+
+            var response = await httpClient.GetAsync(
+                $"api/report/{AppState.CurrentResumeId}");
+
+            var responseText = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var pdfBytes = await response.Content.ReadAsByteArrayAsync();
+
+                if (pdfBytes.Length == 0)
+                {
+                    await JS.InvokeVoidAsync("alert", "PDF is empty!");
+                    return;
+                }
+
+                var base64 = Convert.ToBase64String(pdfBytes);
+                await JS.InvokeVoidAsync("downloadPdf", base64,
+                    $"ResumeAnalysis_{DateTime.Now:yyyyMMdd}.pdf");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert",
+                    $"Error {(int)response.StatusCode}: {responseText}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Exception: {ex.Message}");
+        }
     }
 }

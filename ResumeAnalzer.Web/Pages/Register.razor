@@ -2,70 +2,79 @@
 @inject AuthService AuthService
 @inject NavigationManager Navigation
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white text-center">
-                    <h3>📝 Register</h3>
+<div class="auth-container">
+    <div class="auth-card fade-in">
+        <div class="auth-header">
+            <div style="font-size:3rem">📝</div>
+            <h2>Create Account</h2>
+            <p style="opacity:0.8;margin:0;font-size:0.9rem">
+                Start analyzing your resume today
+            </p>
+        </div>
+        <div class="auth-body">
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger mb-3">
+                    ⚠️ @errorMessage
                 </div>
-                <div class="card-body">
+            }
 
-                    @if (!string.IsNullOrEmpty(errorMessage))
-                    {
-                        <div class="alert alert-danger">@errorMessage</div>
-                    }
-
-                    @if (!string.IsNullOrEmpty(successMessage))
-                    {
-                        <div class="alert alert-success">@successMessage</div>
-                    }
-
-                    <div class="mb-3">
-                        <label class="form-label">Full Name</label>
-                        <input type="text"
-                               class="form-control"
-                               placeholder="Enter your name"
-                               @bind="model.Name" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email"
-                               class="form-control"
-                               placeholder="Enter your email"
-                               @bind="model.Email" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Password</label>
-                        <input type="password"
-                               class="form-control"
-                               placeholder="Enter your password"
-                               @bind="model.Password" />
-                    </div>
-
-                    <button class="btn btn-primary w-100"
-                            @onclick="HandleRegister"
-                            disabled="@isLoading">
-                        @if (isLoading)
-                        {
-                            <span>Registering...</span>
-                        }
-                        else
-                        {
-                            <span>Register</span>
-                        }
-                    </button>
-
-                    <hr />
-                    <p class="text-center">
-                        Already have an account?
-                        <a href="/login">Login here</a>
-                    </p>
-
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success mb-3">
+                    ✅ @successMessage
                 </div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label">Full Name</label>
+                <input type="text"
+                       class="form-control"
+                       placeholder="John Doe"
+                       @bind="model.Name" />
             </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email Address</label>
+                <input type="email"
+                       class="form-control"
+                       placeholder="you@example.com"
+                       @bind="model.Email" />
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Password</label>
+                <input type="password"
+                       class="form-control"
+                       placeholder="Create a strong password"
+                       @bind="model.Password" />
+            </div>
+
+            <button class="btn btn-primary w-100 py-2"
+                    @onclick="HandleRegister"
+                    disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    <span>Creating account...</span>
+                }
+                else
+                {
+                    <span>Create Account →</span>
+                }
+            </button>
+
+            <hr style="margin:1.5rem 0;border-color:var(--border)" />
+
+            <p class="text-center mb-0" style="color:var(--gray)">
+                Already have an account?
+                <a href="/login"
+                       style="color:var(--primary);font-weight:600;
+                    text-decoration:none">
+                    Sign in →
+                </a>
+            </p>
         </div>
     </div>
 </div>
@@ -81,7 +90,6 @@
         errorMessage = string.Empty;
         successMessage = string.Empty;
 
-        // Validate inputs
         if (string.IsNullOrWhiteSpace(model.Name) ||
             string.IsNullOrWhiteSpace(model.Email) ||
             string.IsNullOrWhiteSpace(model.Password))
@@ -91,18 +99,17 @@
         }
 
         isLoading = true;
-
         var success = await AuthService.RegisterAsync(model);
 
         if (success)
         {
-            successMessage = "Registration successful! Redirecting to login...";
+            successMessage = "Account created! Redirecting...";
             await Task.Delay(1500);
             Navigation.NavigateTo("/login");
         }
         else
         {
-            errorMessage = "Registration failed. Email may already be registered.";
+            errorMessage = "Registration failed. Email may already exist.";
         }
 
         isLoading = false;

@@ -1,6 +1,5 @@
 ﻿using ResumeAnalzer.Web.Models;
 using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace ResumeAnalzer.Web.Services
 {
@@ -35,7 +34,10 @@ namespace ResumeAnalzer.Web.Services
             _currentUser = await response.Content
                 .ReadFromJsonAsync<AuthResponse>();
 
-            // Add token to all future requests
+            // ✅ Save token to AppState
+            AppState.Token = _currentUser!.Token;
+
+            // ✅ Add token to all future requests
             _httpClient.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue(
                     "Bearer", _currentUser!.Token);
@@ -46,6 +48,8 @@ namespace ResumeAnalzer.Web.Services
         public void Logout()
         {
             _currentUser = null;
+            AppState.Token = string.Empty;
+            AppState.CurrentResumeId = 0;
             _httpClient.DefaultRequestHeaders.Authorization = null;
         }
     }

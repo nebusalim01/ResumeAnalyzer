@@ -9,59 +9,88 @@
     return;
 }
 
-<div class="container mt-4">
+<div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white text-center">
-                    <h3>📄 Upload Resume</h3>
-                </div>
+        <div class="col-md-7">
+
+            <!-- Page Title -->
+            <div class="text-center mb-4 fade-in">
+                <h2 style="font-weight:700;color:var(--dark)">
+                    📄 Analyze Your Resume
+                </h2>
+                <p style="color:var(--gray)">
+                    Upload your resume and get instant AI-powered feedback
+                </p>
+            </div>
+
+            <div class="card fade-in">
                 <div class="card-body">
 
                     @if (!string.IsNullOrEmpty(errorMessage))
                     {
-                        <div class="alert alert-danger">@errorMessage</div>
+                        <div class="alert alert-danger">
+                            ⚠️ @errorMessage
+                        </div>
                     }
 
                     <!-- File Upload -->
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">
-                            Resume File (PDF or DOCX)
+                    <div class="mb-4">
+                        <label class="form-label">
+                            Resume File
+                            <span style="color:var(--gray);
+                                font-weight:400">
+                                (PDF or DOCX)
+                            </span>
                         </label>
-                        <InputFile class="form-control"
-                                   OnChange="HandleFileSelected"
-                                   accept=".pdf,.docx" />
+                        <div class="upload-zone">
+                            <div style="font-size:2.5rem">📂</div>
+                            <p style="color:var(--gray);margin:0.5rem 0">
+                                Click to select your resume
+                            </p>
+                            <InputFile class="form-control mt-2"
+                                       OnChange="HandleFileSelected"
+                                       accept=".pdf,.docx" />
+                        </div>
                         @if (selectedFile != null)
                         {
-                            <small class="text-success">
-                                ✅ Selected: @selectedFile.Name
+                            <div class="mt-2 p-2 rounded"
+                                 style="background:#D1FAE5;
+                                color:#065F46;
+                                font-size:0.9rem">
+                                ✅ @selectedFile.Name
                                 (@((selectedFile.Size / 1024)) KB)
-                            </small>
+                            </div>
                         }
                     </div>
 
-                    <!-- Job Description (Optional) -->
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">
+                    <!-- Job Description -->
+                    <div class="mb-4">
+                        <label class="form-label">
                             Job Description
-                            <span class="text-muted">(Optional)</span>
+                            <span class="badge ms-2"
+                                  style="background:var(--light);
+                                color:var(--gray)">
+                                Optional
+                            </span>
                         </label>
                         <textarea class="form-control"
                                   rows="5"
-                                  placeholder="Paste job description here to get match score..."
+                                  placeholder="Paste the job description here to get a match score..."
                                       @bind="jobDescription">
                         </textarea>
                         </div>
 
-                        <!-- Submit Button -->
-                        <button class="btn btn-primary w-100"
+                        <!-- Submit -->
+                        <button class="btn btn-primary w-100 py-3"
+                                style="font-size:1.05rem"
                                 @onclick="HandleUpload"
                                 disabled="@isLoading">
                             @if (isLoading)
                             {
-                                <span>
-                                    ⏳ Analyzing your resume... Please wait...
+                                <span class="spinner-border
+                                    spinner-border-sm me-2">
                                 </span>
+                                <span>Analyzing your resume...</span>
                             }
                             else
                             {
@@ -71,6 +100,26 @@
 
                     </div>
                 </div>
+
+                <!-- Tips Card -->
+                <div class="card mt-3 fade-in"
+                     style="background:linear-gradient(135deg,#EEF2FF,#E0E7FF)">
+                    <div class="card-body py-3">
+                        <p class="mb-1"
+                               style="font-weight:600;color:var(--primary)">
+                            💡 Tips for better results
+                        </p>
+                        <ul style="color:var(--gray);
+                            font-size:0.9rem;
+                            margin:0;
+                            padding-left:1.2rem">
+                            <li>Use PDF format for best parsing accuracy</li>
+                            <li>Include the job description for match scoring</li>
+                            <li>Make sure your resume is text-based, not scanned</li>
+                        </ul>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -119,8 +168,20 @@
 
             if (result != null)
             {
-                // Store result and navigate to results page
                 AppState.AnalysisResult = result;
+
+                // Get latest resume ID
+                var resumes = await ResumeService.GetMyResumesAsync();
+                if (resumes.Any())
+                {
+                    AppState.CurrentResumeId = resumes
+                        .OrderByDescending(r => r.UploadedAt)
+                        .First().Id;
+
+                    // Debug — check value
+                    Console.WriteLine($"ResumeId saved: {AppState.CurrentResumeId}");
+                }
+
                 Navigation.NavigateTo("/result");
             }
             else
